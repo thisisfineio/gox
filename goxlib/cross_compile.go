@@ -53,10 +53,10 @@ func init(){
 
 }
 
-func CrossCompile() error {
+func CrossCompile() ([]string, error) {
 
 	if err := flags.Parse(os.Args[1:]); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Determine what amount of parallelism we want Default to the current
@@ -79,20 +79,20 @@ func CrossCompile() error {
 	}
 
 	if buildToolchain {
-		return mainBuildToolchain(parallel, platformFlag, verbose)
+		return nil, mainBuildToolchain(parallel, platformFlag, verbose)
 	}
 
 	if _, err := exec.LookPath(flagGoCmd); err != nil {
-		return fmt.Errorf("%s executable must be on the PATH\n", flagGoCmd)
+		return nil, fmt.Errorf("%s executable must be on the PATH\n", flagGoCmd)
 	}
 
 	version, err := GoVersion()
 	if err != nil {
-		return fmt.Errorf("error reading Go version: %s", err)
+		return nil, fmt.Errorf("error reading Go version: %s", err)
 	}
 
 	if flagListOSArch {
-		return mainListOSArch(version)
+		return nil, mainListOSArch(version)
 	}
 
 	// Determine the packages that we want to compile. Default to the
@@ -105,13 +105,13 @@ func CrossCompile() error {
 	// Get the packages that are in the given paths
 	mainDirs, err := GoMainDirs(packages, flagGoCmd)
 	if err != nil {
-		return fmt.Errorf("Error reading packages: %s", err.Error())
+		return nil, fmt.Errorf("Error reading packages: %s", err.Error())
 	}
 
 	// Determine the platforms we're building for
 	platforms := platformFlag.Platforms(SupportedPlatforms(version))
 	if len(platforms) == 0 {
-		return ErrNoValidPlatforms
+		return nil, ErrNoValidPlatforms
 	}
 
 	// Build in parallel!
@@ -120,6 +120,8 @@ func CrossCompile() error {
 	var wg sync.WaitGroup
 	errors := make([]string, 0)
 	semaphore := make(chan int, parallel)
+	binPaths := make([]string, 0)
+	var mu sync.Mutex
 	for _, platform := range platforms {
 		for _, path := range mainDirs {
 			// Start the goroutine that will do the actual build
@@ -151,6 +153,9 @@ func CrossCompile() error {
 					errors = append(errors,
 						fmt.Sprintf("%s error: %s", platform.String(), err))
 				}
+				mu.Lock()
+				binPaths = append(binPaths, path)
+				mu.Unlock()
 				<-semaphore
 			}(path, platform)
 		}
@@ -162,10 +167,10 @@ func CrossCompile() error {
 		for _, err := range errors {
 			fmt.Fprintf(os.Stderr, "--> %s\n", err)
 		}
-		return err
+		return nil, err
 	}
 
-	return nil
+	return binPaths, nil
 }
 
 func printUsage() {

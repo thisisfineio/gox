@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	if err := goxlib.CrossCompile(); err != nil {
+	if _, err := goxlib.CrossCompile(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
