@@ -1,4 +1,4 @@
-package main
+package goxlib
 
 import (
 	"bytes"
@@ -13,37 +13,37 @@ import (
 )
 
 // The "main" method for when the toolchain build is requested.
-func mainBuildToolchain(parallel int, platformFlag PlatformFlag, verbose bool) int {
+func mainBuildToolchain(parallel int, platformFlag PlatformFlag, verbose bool) error {
 	if _, err := exec.LookPath("go"); err != nil {
-		fmt.Fprintf(os.Stderr, "You must have Go already built for your native platform\n")
-		fmt.Fprintf(os.Stderr, "and the `go` binary on the PATH to build toolchains.\n")
-		return 1
+		fmt.Fprint(os.Stderr, "You must have Go already built for your native platform\n")
+		fmt.Fprint(os.Stderr, "and the `go` binary on the PATH to build toolchains.\n")
+		return err
 	}
 
 	// If we're version 1.5 or greater, then we don't need to do this anymore!
 	versionParts, err := GoVersionParts()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error reading Go version: %s", err)
-		return 1
+		return err
 	}
 	if versionParts[0] >= 1 && versionParts[1] >= 5 {
-		fmt.Fprintf(
+		fmt.Fprint(
 			os.Stderr,
 			"-build-toolchain is no longer required for Go 1.5 or later.\n"+
 				"You can start using Gox immediately!\n")
-		return 1
+		return err
 	}
 
 	version, err := GoVersion()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error reading Go version: %s", err)
-		return 1
+		return err
 	}
 
 	root, err := GoRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error finding GOROOT: %s\n", err)
-		return 1
+		return err
 	}
 
 	if verbose {
@@ -69,7 +69,7 @@ func mainBuildToolchain(parallel int, platformFlag PlatformFlag, verbose bool) i
 	for _, platform := range platforms {
 		wg.Add(1)
 		go func(platform Platform) {
-			err := buildToolchain(&wg, semaphore, root, platform, verbose)
+			err := BuildToolchain(&wg, semaphore, root, platform, verbose)
 			if err != nil {
 				errorLock.Lock()
 				defer errorLock.Unlock()
@@ -84,13 +84,13 @@ func mainBuildToolchain(parallel int, platformFlag PlatformFlag, verbose bool) i
 		for _, err := range errs {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 		}
-		return 1
+		return err
 	}
 
-	return 0
+	return nil
 }
 
-func buildToolchain(wg *sync.WaitGroup, semaphore chan int, root string, platform Platform, verbose bool) error {
+func BuildToolchain(wg *sync.WaitGroup, semaphore chan int, root string, platform Platform, verbose bool) error {
 	defer wg.Done()
 	semaphore <- 1
 	defer func() { <-semaphore }()
