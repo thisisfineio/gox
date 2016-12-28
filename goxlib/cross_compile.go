@@ -146,15 +146,16 @@ func CrossCompile() ([]string, error) {
 				// GOOS/GOARCH combo and override the defaults if so.
 				envOverride(&opts.Ldflags, platform, "LDFLAGS")
 				envOverride(&opts.Gcflags, platform, "GCFLAGS")
-
-				if err := GoCrossCompile(opts); err != nil {
+				var binName string
+				var err error
+				if binName, err = GoCrossCompile(opts); err != nil {
 					errorLock.Lock()
 					defer errorLock.Unlock()
 					errors = append(errors,
 						fmt.Sprintf("%s error: %s", platform.String(), err))
 				}
 				mu.Lock()
-				binPaths = append(binPaths, path)
+				binPaths = append(binPaths, path + string(os.PathSeparator) + binName)
 				mu.Unlock()
 				<-semaphore
 			}(path, platform)

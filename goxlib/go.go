@@ -33,7 +33,7 @@ type CompileOpts struct {
 }
 
 // GoCrossCompile
-func GoCrossCompile(opts *CompileOpts) error {
+func GoCrossCompile(opts *CompileOpts) (binPath string, err error) {
 	env := append(os.Environ(),
 		"GOOS="+opts.Platform.OS,
 		"GOARCH="+opts.Platform.Arch)
@@ -55,7 +55,7 @@ func GoCrossCompile(opts *CompileOpts) error {
 	var outputPath bytes.Buffer
 	tpl, err := template.New("output").Parse(opts.OutputTpl)
 	if err != nil {
-		return err
+		return "", err
 	}
 	tplData := OutputTemplateData{
 		Dir:  filepath.Base(opts.PackagePath),
@@ -63,7 +63,7 @@ func GoCrossCompile(opts *CompileOpts) error {
 		Arch: opts.Platform.Arch,
 	}
 	if err := tpl.Execute(&outputPath, &tplData); err != nil {
-		return err
+		return "", err
 	}
 
 	if opts.Platform.OS == "windows" {
@@ -75,7 +75,7 @@ func GoCrossCompile(opts *CompileOpts) error {
 	outputPathReal := outputPath.String()
 	outputPathReal, err = filepath.Abs(outputPathReal)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Go prefixes the import directory with '_' when it is outside
@@ -114,7 +114,7 @@ func GoCrossCompile(opts *CompileOpts) error {
 		opts.PackagePath)
 
 	_, err = execGo(opts.GoCmd, env, chdir, args...)
-	return err
+	return outputPath.String(), err
 }
 
 // GoMainDirs returns the file paths to the packages that are "main"
