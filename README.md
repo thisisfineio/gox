@@ -4,6 +4,9 @@ Gox is a simple, no-frills tool for Go cross compilation that behaves a
 lot like standard `go build`. Gox will parallelize builds for multiple
 platforms. Gox will also build the cross-compilation toolchain for you.
 
+## thisisfine.io - forked version
+This is a forked version of Gox by Mitchell Hashimoto of Hashicorp. We have refactored it into a library that can be called from other Go applications. We use this with [dispatch](https://github.com/thisisfineio/dispatch) to compile our Go binaries and upload them to Github as releases.
+
 ## Installation
 
 To install Gox, please use `go get`. We tag versions so feel free to
