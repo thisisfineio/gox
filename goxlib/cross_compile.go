@@ -35,7 +35,7 @@ var (
 
 func init(){
 
-	flags.Usage = func() { printUsage() }
+	flags.Usage = func() { PrintUsage() }
 	flags.Var(platformFlag.ArchFlagValue(), "arch", "arch to build for or skip")
 	flags.Var(platformFlag.OSArchFlagValue(), "osarch", "os/arch pairs to build for or skip")
 	flags.Var(platformFlag.OSFlagValue(), "os", "os to build for or skip")
@@ -50,7 +50,6 @@ func init(){
 	flags.BoolVar(&flagListOSArch, "osarch-list", false, "")
 	flags.StringVar(&flagGcflags, "gcflags", "", "")
 	flags.StringVar(&flagGoCmd, "gocmd", "go", "")
-
 }
 
 func CrossCompile() ([]string, error) {
@@ -174,11 +173,11 @@ func CrossCompile() ([]string, error) {
 	return binPaths, nil
 }
 
-func printUsage() {
+func PrintUsage() {
 	fmt.Fprint(os.Stderr, helpText)
 }
 
-const helpText = `Usage: gox [options] [packages]
+const helpText = `Usage: goxlib [options] [packages]
 
   Gox cross-compiles Go applications in parallel.
 
